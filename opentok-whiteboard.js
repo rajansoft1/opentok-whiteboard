@@ -149,20 +149,21 @@ var OpenTokWhiteboard = angular.module('opentok-whiteboard', ['opentok'])
                     if (!undoStack.length)
                         return;
                     undodata = undoStack.pop();
-                    undoWhiteBoard(undodata, 1);
-                    redoStack.push(undodata);
+                    undoWhiteBoard(undodata);
+                    //redoStack.push(undodata);
+					console.log(undodata);
                     sendUpdate('otWhiteboard_undo', undodata);
                 };
-                var undoWhiteBoard = function (data, flag) {
-					if (flag) {
-						drawHistory.splice(data.start - data.count, data.count).forEach(function (update) {
-							redoStackData.push(update);
-						});
-					} else{
-						data.forEach(function (update) {
-							drawHistory.splice(update.start - update.count, update.count);
-						});
+                var undoWhiteBoard = function (data) {
+					//console.log(data.start);
+					
+					for(i=data.start - data.count;i<data.start;i++){
+						//redoStackData(drawHistory[i]);
+						drawHistory[i]=null;
 					}
+					
+						
+					
 					clearCanvas();
 					drawHistory.forEach(function (update) {
 						draw(update);
@@ -241,7 +242,6 @@ var OpenTokWhiteboard = angular.module('opentok-whiteboard', ['opentok'])
                         };
 
                         if (toConnection) signal.to = toConnection;
-						console.log("yaha be gadbad3");
                         OTSession.session.signal(signal, signalError);
 																		
 
@@ -281,7 +281,7 @@ var OpenTokWhiteboard = angular.module('opentok-whiteboard', ['opentok'])
 							//console.log(imgobj);
 							
 							
-                            
+                        /*    
 						if (OTSession.session) {
 							console.log("yaha be gadbad1");
 							batchUpdates.push(imgobj);
@@ -294,7 +294,7 @@ var OpenTokWhiteboard = angular.module('opentok-whiteboard', ['opentok'])
 									updateTimeout = null;
 								}, 100);
 							}
-						}
+						}*/
                         };
                         img.src = e.target.result;
                     }
@@ -394,9 +394,11 @@ var OpenTokWhiteboard = angular.module('opentok-whiteboard', ['opentok'])
                         },
                         'signal:otWhiteboard_undo': function (event) {
                             if (event.from.connectionId !== OTSession.session.connection.connectionId) {
-								//console.log("suman");
 								//console.log(JSON.parse(event.data.start));
-                                undoWhiteBoard(JSON.parse(event.data), 0);
+								JSON.parse(event.data).forEach( function(data){
+									undoWhiteBoard(data);
+								});
+                                
                                 scope.$emit('otWhiteboardUpdate');
                             }
                         },
