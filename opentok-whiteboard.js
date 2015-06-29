@@ -9,25 +9,83 @@
  **/
 
 var OpenTokWhiteboard = angular.module('opentok-whiteboard', ['opentok'])
-    .directive('otWhiteboard', ['OTSession', '$window', function (OTSession, $window) {
+    .directive('hlWhiteboard', ['OTSession', '$window', function (OTSession, $window) {
         return {
             restrict: 'E',
             template: '<canvas></canvas>' +
+						
+						'<div class="activityToolBox" >'+
+							'<div class="Toolbox">'+
+								'<div id="Blackcolor" ng-click="changeColor(\'black\')"></div>'+
+							'</div>'+
+							
+							'<div class="Toolbox">'+
+								'<div id="Redcolor" ng-click="changeColor(\'red\')"></div>'+
+							'</div>'+
+							
+							'<div class="Toolbox">'+
+								'<div id="Bluecolor" ng-click="changeColor(\'blue\')"></div>'+
+							'</div>'+
+							
+							'<div class="Toolbox">'+
+								'<div id="Greencolor" ng-click="changeColor(\'green\')"></div>'+
+							'</div>'+
+							
+							'<div class="Toolbox">'+
+								
+								'<div id="Capture" ng-click="capture()">'+
+									'<a style="text-decoration: none !important;" id="download-wb">'+
+										'<img src="static/font-awesome/black/svg/camera-retro.svg" altext=""/>'+
+									'</a>'+
+								'</div>'+
+								
+							'</div>'+
+							
+							'<div class="Toolbox">'+
+								'<div id="Eraser" ng-click="erase()">'+
+									'<img src="static/font-awesome/black/svg/eraser.svg" altext=""/>'+
+								'</div>'+
+							'</div>'+
+							
+							'<div class="Toolbox">'+
+								'<div id="Undo" ng-click="undo()" >'+
+									'<img src="static/font-awesome/black/svg/undo.svg" altext=""/>'+
+								'</div>'+
+							'</div>'+
+							
+							'<div class="Toolbox">'+
+								'<div id="Redo" ng-click="redo()" >'+
+									'<img src="static/font-awesome/black/svg/repeat.svg" altext=""/>'+
+								'</div>'+
+							'</div>'+
+							
+							'<div class="Toolbox">'+
+								'<div id="Empty"></div>'+
+							'</div>'+
+							
+							'<div class="Toolbox">'+
+								'<div id="Clear" ng-click="clear()">'+
+									'<img src="static/font-awesome/black/svg/times.svg" altext=""/>'+
+								'</div>'+
+							'</div>'+
+						
+						'</div>'
+						/*+
 
                 '<div class="OT_panel">' +
 
                 '<input type="button" ng-class="{OT_color: true, OT_selected: c[\'background-color\'] === color}" ' +
-                'ng-repeat="c in colors" ng-style="c" ng-click="changeColor(c)">' +
+                'ng-repeat="c in colors" ng-style="c" ng-click="changeColor(c)">'+
                 '</input>' +
 
                 '<input type="button" ng-click="erase()" ng-class="{OT_erase: true, OT_selected: erasing}"' +
                 ' value="Eraser"></input>' +
 
-                '<a style="text-decoration: none !important;" id="download"><input type="button" ng-click="capture()" class="OT_capture" value="{{captureText}}"></input></a>'+
+                '<a style="text-decoration: none !important;" id="download-wb"><input type="button" ng-click="capture()" class="OT_capture" value="{{captureText}}"></input></a>'+
 
                 '<input type="button" ng-click="clear()" class="OT_clear" value="Clear"></input>' +
 
-                '<input type="button" ng-click="undo()" class="OT_undo" value="Undo"></input>' /*+
+                '<input type="button" ng-click="undo()" class="OT_undo" value="Undo"></input>' +
 
                 '<input type="button" ng-click="redo()" class="OT_redo" value="Redo"></input>' +
                 '<input type="file" class="OT_loadImage" id="OT_loadImage" value="Load\nImage"></input>'*/,
@@ -36,12 +94,12 @@ var OpenTokWhiteboard = angular.module('opentok-whiteboard', ['opentok'])
                 var canvas = element.context.querySelector("canvas"),
                     select = element.context.querySelector("select"),
                     input = element.context.querySelector("input"),
-                    inputImage = element.context.querySelector("#download"),
+                    inputImage = element.context.querySelector("#download-wb"),
                     inputFile = element.context.querySelector("input.OT_loadImage"),
                     client = {
                         dragging: false
                     },
-                    ctx = canvas.getContext("2d"),
+                    ctx = canvas.getContext("2d"),//could create problem in integration
                     drawHistory = [],
                     undoStack = [],
                     redoStack = [],
@@ -54,8 +112,8 @@ var OpenTokWhiteboard = angular.module('opentok-whiteboard', ['opentok'])
                     iOS = /(iPad|iPhone|iPod)/g.test(navigator.userAgent);
 				var mainuser=1;
 				var imgobj;
-                ctx.lineCap = "round";
-                ctx.fillStyle = "solid";
+                ctx.lineCap = "round";//could create problem in integration
+                ctx.fillStyle = "solid";//could create problem in integration
 
 
                 scope.colors = [{
@@ -78,7 +136,7 @@ var OpenTokWhiteboard = angular.module('opentok-whiteboard', ['opentok'])
                 
 
                 scope.changeColor = function (color) {
-                    scope.color = color['background-color'];
+                    scope.color = color;
                     scope.lineWidth = 2;
                     scope.erasing = false;
                 };
@@ -112,7 +170,7 @@ var OpenTokWhiteboard = angular.module('opentok-whiteboard', ['opentok'])
                 };
 
                 var draw = function (update) {
-                    if (!update)
+                    if (!update.show)
                         return;
                     ctx.strokeStyle = update.color;
                     ctx.lineWidth = update.lineWidth;
@@ -144,13 +202,12 @@ var OpenTokWhiteboard = angular.module('opentok-whiteboard', ['opentok'])
                     ctx.restore();
                 };
 
-                /*^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^*/
                 scope.undo = function () {
                     if (!undoStack.length)
                         return;
-                    undodata = undoStack.pop();
+                    var undodata = undoStack.pop();
                     undoWhiteBoard(undodata);
-                    //redoStack.push(undodata);
+                    redoStack.push(undodata);
 					console.log(undodata);
                     sendUpdate('otWhiteboard_undo', undodata);
                 };
@@ -159,7 +216,7 @@ var OpenTokWhiteboard = angular.module('opentok-whiteboard', ['opentok'])
 					
 					for(i=data.start - data.count;i<data.start;i++){
 						//redoStackData(drawHistory[i]);
-						drawHistory[i]=null;
+						drawHistory[i].show=0;;
 					}
 					
 						
@@ -168,42 +225,26 @@ var OpenTokWhiteboard = angular.module('opentok-whiteboard', ['opentok'])
 					drawHistory.forEach(function (update) {
 						draw(update);
 					});
-				}
-                    /*^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^*/
-				/*
+				}				
                 scope.redo = function () {
                     if (!redoStack.length)
                         return;
-					var position= redoStack[redoStack.length - 1].start-redoStack[redoStack.length - 1].count;
-					var data=redoStackData.splice(redoStackData.length-redoStack[redoStack.length - 1].count,redoStack[redoStack.length - 1].count);
-					//redoWhiteBoard(data,position);
-					
-					data.forEach(function (datapoints)){
-						redodata={pos: position++, update: datapoints};
-						redoWhiteBoard(redodata);
-						sendUpdate('otWhiteboard_redo', redodata);
-					}
-					/*
-                    for (i = 0; i < redoStack[redoStack.length - 1].count; i++) {
-                        update = redoStackData.pop();
-                        draw(update);
-                        drawHistory.push(update);
-                        sendUpdate('otWhiteboard_update', update);
-                    //}
-                    undoStack.push(redoStack.pop());
-
+					var redodata = redoStack.pop();
+					redoWhiteBoard(redodata);
+					undoStack.push(redodata);
+					sendUpdate('otWhiteboard_redo', redodata);
                 };
-				var redoWhiteBoard = function(redodata){
-					drawHistory.splice(redodata.pos,0,redodata.update);
-					//drawHistory.splice.apply(drawHistory,[position, 0].concat(updates));
+				var redoWhiteBoard = function(data){
+					for(i=data.start - data.count;i<data.start;i++){
+						//redoStackData(drawHistory[i]);
+						drawHistory[i].show=1;
+					}
 					clearCanvas();
 					drawHistory.forEach(function (update) {
-                        draw(update);
-                    });
-					
-					
+						draw(update);
+					});
 				}
-				*/
+				
 				var sendUpdate = function (type, update) {
                     if (OTSession.session) {
                         batchUpdates.push(update);
@@ -354,7 +395,8 @@ var OpenTokWhiteboard = angular.module('opentok-whiteboard', ['opentok'])
                                     toX: x,
                                     toY: y,
                                     color: scope.color,
-                                    lineWidth: scope.lineWidth
+                                    lineWidth: scope.lineWidth,
+									show: 1
                                 };
 
                                 count++;
@@ -397,6 +439,16 @@ var OpenTokWhiteboard = angular.module('opentok-whiteboard', ['opentok'])
 								//console.log(JSON.parse(event.data.start));
 								JSON.parse(event.data).forEach( function(data){
 									undoWhiteBoard(data);
+								});
+                                
+                                scope.$emit('otWhiteboardUpdate');
+                            }
+                        },
+						'signal:otWhiteboard_redo': function (event) {
+                            if (event.from.connectionId !== OTSession.session.connection.connectionId) {
+								//console.log(JSON.parse(event.data.start));
+								JSON.parse(event.data).forEach( function(data){
+									redoWhiteBoard(data);
 								});
                                 
                                 scope.$emit('otWhiteboardUpdate');
